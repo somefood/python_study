@@ -1,5 +1,5 @@
 """숫자 야구게임
-   version 1.0f
+   version 2.0
 """
 
 import random
@@ -12,72 +12,110 @@ SCORE_BALL = 20
 SCORE_NOTHING = 50
 TRY_MAX = 10
 
-print('--------------------------')
-print(' 숫자 야구 게임 ver. 1.0f ')
-print('--------------------------')
 
-# 서로 다른 숫자로 이루어지 3자리 난수열 생성
-items = random.sample(range(1,10), 3)
-hidden = [str(x) for x in items]
+def get_hidden_number():
+    """ 서로 다른 숫자로 이루어진 3자리 난수열 생성 """
+    items = random.sample(range(1, 10), 3)
+    hidden = [str(x) for x in items]
+    return hidden
 
-n_try = 1
-score = SCORE_START
 
-while True:
-
-    # 숫자입력
-    while True:
-
+def get_my_number():
+    """ 숫자입력과 적절성 검토
+    적절성 검토를 위해 내부적으로 is_valid_input() 함수를 호출한다.
+    """
+    flag = False
+    while flag is False:
         data = input('숫자를 입력하세요 : ')
+        flag = is_valid_input(data)
+    return data
 
-        # 입력값이 숫자인가?
-        if not (data.isdecimal()):
-            print('[{this}]은(는) 숫자가 아닙니다!'.format(this=data))
 
-        # 입력된 숫자가 3자리인가?
-        elif len(data) is not 3:
-            print('[%s]은(는) %d자리입니다! 세자리 수를 입력하세요' % (data, len(data)))
+def is_valid_input(data):
+    # 입력값이 숫자인가?
+    if not (data.isdecimal()):
+        print('[{this}]은(는) 숫자가 아닙니다!'.format(this=data))
+        return False
+    # 입력된 숫자가 3자리인가?
+    elif len(data) != 3:
+        print('[%s]은(는) %d자리입니다! 세자리 수를 입력하세요' % (data, len(data)))
+        return False
+    # 입력된 숫자열에 같은 수가 있는가?
+    elif (data[0] == data[1] or data[0] == data[2] or data[1] == data[2]):
+        print('같은 숫자쌍이 있습니다! 각 자리의 숫자는 서로 달라야합니다.')
+        return False
+    else:
+        return True
 
-        # 입력된 숫자열에 같은 수가 있는가?
-        elif (data[0] == data[1] or data[0] == data[2] or data[1] == data[2]):
-            print('같은 숫자쌍이 있습니다! 각 자리의 숫자는 서로 달라야합니다.')
 
-        else:
-            break
-
-    # 볼카운트 계산
-    n_strike = 0
-    n_ball = 0
+def get_ballcount(hidden, data):
+    """ 볼카운트를 계산하여 튜플 자료형으로 반환한다. """
+    strikes = 0
+    balls = 0
     for n, value1 in enumerate(hidden):
         for m, value2 in enumerate(data):
             if value1 == value2:
                 if n == m:
-                    n_strike += 1
+                    strikes += 1
                 else :
-                    n_ball += 1
+                    balls += 1
+    return (strikes, balls)
 
-    # 점수 계산
+
+def update_score(strikes, balls, score):
+    """ 시도횟수와 볼카운트를 참조하여 갱신됨 점수를 반환한다. """
     score += SCORE_TRY
-    if n_strike is 0 and n_ball is 0:
+    if strikes == 0 and balls == 0:
         score += SCORE_NOTHING
     else:
-        score += n_strike*SCORE_STRIKE + n_ball*SCORE_BALL
+        score += strikes*SCORE_STRIKE + balls*SCORE_BALL
+    return score
 
-    # 볼카운트와 점수 출력
-    if n_strike is 0 and n_ball is 0:
-        print('=> [%2d]차 시도, 낫싱입니다. %5d점' % (n_try, score))
+
+def show_result(trys, strikes, balls, score):
+    """ 결과 출력 (볼카운트, 점수) """
+    if strikes == 0 and balls == 0:
+        print('=> [%2d]차 시도, 낫싱입니다. %5d점' % (trys, score))
     else:
-        print('=> [%2d]차 시도, %d 스트라이크 %d 볼입니다. %5d점' % (n_try, n_strike, n_ball, score))
+        print('=> [%2d]차 시도, %d 스트라이크 %d 볼입니다. %5d점' % (trys, strikes, balls, score))
 
-    # 게임종료 여부 확인
-    if n_strike is 3:
-        print('\n 축하합니다!')
-        print('{number}회 시도만에 성공했네요'.format(number=n_try))
-        print('당신의 점수는 %d점입니다.' % score)
+
+def you_succeeded(trys, score):
+    """ 게임 승리 메시지 출력 """
+    print('\n축하합니다!')
+    print('{number}회 시도만에 성공했네요'.format(number=trys))
+    print('당신의 최종 점수는 %d점입니다.' % score)
+
+
+def you_failed(hidden, score):
+    """ 게임 패배 메시지 출력 """
+    print('\n안타깝네요!')
+    print('숨겨진 수는 %s입니다.' % hidden)
+    print('당신의 최종 점수는 %d점입니다.' % score)
+
+
+print('--------------------------')
+print(' 숫자 야구 게임 ver. 2.0 ')
+print('--------------------------')
+
+# 서로 다른 숫자로 이루어지 3자리 난수열 생성
+hidden = get_hidden_number()
+
+trys = 1
+score = SCORE_START
+
+while True:
+
+    my_number = get_my_number()
+    strikes, balls = get_ballcount(hidden, my_number)
+    score = update_score(strikes, balls, score)
+    show_result(trys, strikes, balls, score)
+
+    if strikes == 3:
+        you_succeeded(trys, score)
         break
-    if n_try > TRY_MAX or score <= 0:
-        print('\n 안타깝네요!')
-        print('숨겨진 수는 %s입니다.' % hidden)
-        print('당신의 최종 점수는 %d점입니다.' % score)
+    if trys > TRY_MAX or score <= 0:
+        you_failed(score, hidden)
         break
-    n_try += 1
+
+    trys += 1
